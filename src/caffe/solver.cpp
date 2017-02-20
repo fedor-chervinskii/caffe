@@ -38,19 +38,7 @@ Solver<Dtype>::Solver(const string& param_file, const Solver* root_solver)
       requested_early_exit_(false) {
   SolverParameter param;
   ReadSolverParamsFromTextFileOrDie(param_file, &param);
-  CheckType(&param);
   Init(param);
-}
-
-template <typename Dtype>
-void Solver<Dtype>::CheckType(SolverParameter* param) {
-  // Harmonize solver class type with configured type to avoid confusion.
-  if (param->has_type()) {
-    CHECK_EQ(param->type(), this->type())
-        << "Solver type must agree with instantiated solver class.";
-  } else {
-    param->set_type(this->type());
-  }
 }
 
 template <typename Dtype>
@@ -211,6 +199,7 @@ void Solver<Dtype>::Step(int iters) {
   smoothed_loss_ = 0;
 
   while (iter_ < stop_iter) {
+    net_->set_iter(iter_);
     // zero-init the params
     net_->ClearParamDiffs();
     if (param_.test_interval() && iter_ % param_.test_interval() == 0
@@ -355,6 +344,7 @@ void Solver<Dtype>::Test(const int test_net_id) {
   const shared_ptr<Net<Dtype> >& test_net = test_nets_[test_net_id];
   Dtype loss = 0;
   for (int i = 0; i < param_.test_iter(test_net_id); ++i) {
+    net_->set_iter(i);
     SolverAction::Enum request = GetRequestedAction();
     // Check to see if stoppage of testing/training has been requested.
     while (request != SolverAction::NONE) {
